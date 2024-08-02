@@ -7,37 +7,39 @@ import os
 from pathlib import Path
 import textwrap
 
-import google.generativeai as genai
+# Import the pipeline from transformers
+from transformers import pipeline
 
 def to_markdown(text):
   text = text.replace('•', '  *')
-  return Markdown(textwrap.indent(text, '> ', predicate=lambda _: True))
+  return textwrap.indent(text, '> ', predicate=lambda _: True)
 
-os.getenv("GOOGLE_API_KEY")
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+# Initialize the Hugging Face pipeline
+try:
+    pipe = pipeline("text-generation", model="gpt2")
+except Exception as e:
+    st.error(f"Error loading model: {e}")
 
-## Function to load OpenAI model and get respones
+## Function to get response from Hugging Face model
+def get_huggingface_response(question):
+    try:
+        response = pipe(question, max_length=100, num_return_sequences=1)
+        return response[0]['generated_text']
+    except Exception as e:
+        st.error(f"Error generating response: {e}")
+        return ""
 
-def get_gemini_response(question):
-    model = genai.GenerativeModel('gemini-pro')
-    response = model.generate_content(question)
-    return response.text
-
-##initialize our streamlit app
-
+## Initialize our streamlit app
 st.set_page_config(page_title="LLM Demo")
 
 st.header("Gemini App")
 
-input=st.text_input("Input: ",key="input")
+input = st.text_input("Input: ", key="input")
 
-
-submit=st.button("Ask the question")
+submit = st.button("Ask the question")
 
 ## If ask button is clicked
-
 if submit:
-    
-    response=get_gemini_response(input)
+    response = get_huggingface_response(input)
     st.subheader("The Response is")
     st.write(response)
